@@ -367,7 +367,7 @@ impl OperandDefinition {
                 size_helper(s.unwrap_or(def_size), op),
             OperandType::Imm => op.map(|o| o.is_literal() || o.is_offset() || o.is_far())
                 .unwrap_or(false) && size_helper(def_size, op),
-            OperandType::Offset => unimplemented!(),
+            OperandType::Offset => false,
             OperandType::Rel(op_size) => match *op {
                 Some(Operand::Offset(o, ..)) => op_size.is_valid_literal(o),
                 Some(Operand::Literal8(_)) => true,

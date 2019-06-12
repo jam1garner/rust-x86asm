@@ -18,6 +18,10 @@ impl<T: Write> InstructionWriter<T> {
 
     pub fn get_inner_writer_ref(&self) -> &T { &self.writer }
 
+    pub fn write_bytes(&mut self, bytes: &[u8]) -> std::result::Result<usize, std::io::Error> {
+        self.writer.write(bytes)
+    }
+
     pub fn write(&mut self, instr: &Instruction) -> Result<usize, InstructionEncodingError> {
         instr.encode(&mut self.writer, self.mode)
     }

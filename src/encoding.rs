@@ -1,14 +1,14 @@
-use std::io::Write;
+use std::io::{Write, Seek, SeekFrom};
 use ::{Instruction, Mnemonic, Mode, Operand, OperandSize, Reg, RegScale};
 use ::instruction_buffer::{ImmediateValue, InstructionBuffer};
 use ::instruction_def::*;
 
-pub struct InstructionWriter<T: Write> {
+pub struct InstructionWriter<T: Write + Seek> {
     writer: T,
     mode: Mode,
 }
 
-impl<T: Write> InstructionWriter<T> {
+impl<T: Write + Seek> InstructionWriter<T> {
     pub fn new(writer: T, mode: Mode) -> InstructionWriter<T> {
         InstructionWriter {
             writer: writer,
@@ -20,6 +20,11 @@ impl<T: Write> InstructionWriter<T> {
 
     pub fn write_bytes(&mut self, bytes: &[u8]) -> std::result::Result<usize, std::io::Error> {
         self.writer.write(bytes)
+    }
+
+    pub fn seek(&mut self, loc: u64) -> std::result::Result<(), std::io::Error> {
+        self.writer.seek(SeekFrom::Start(loc))?;
+        Ok(())
     }
 
     pub fn write(&mut self, instr: &Instruction) -> Result<usize, InstructionEncodingError> {

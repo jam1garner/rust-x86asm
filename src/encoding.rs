@@ -22,8 +22,8 @@ impl<T: Write + Seek> InstructionWriter<T> {
         self.writer.write(bytes)
     }
 
-    pub fn seek(&mut self, loc: u64) -> std::result::Result<(), std::io::Error> {
-        self.writer.seek(SeekFrom::Start(loc))?;
+    pub fn seek(&mut self, loc: SeekFrom) -> std::result::Result<(), std::io::Error> {
+        self.writer.seek(loc)?;
         Ok(())
     }
 

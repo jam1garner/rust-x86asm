@@ -6,6 +6,7 @@ use ::instruction_def::*;
 pub struct InstructionWriter<T: Write + Seek> {
     writer: T,
     mode: Mode,
+    last_push_rax: bool,
 }
 
 impl<T: Write + Seek> InstructionWriter<T> {
@@ -13,25 +14,30 @@ impl<T: Write + Seek> InstructionWriter<T> {
         InstructionWriter {
             writer: writer,
             mode: mode,
+            last_push_rax: false,
         }
     }
 
     pub fn get_inner_writer_ref(&self) -> &T { &self.writer }
 
     pub fn write_bytes(&mut self, bytes: &[u8]) -> std::result::Result<usize, std::io::Error> {
+        self.last_push_rax = false;
         self.writer.write(bytes)
     }
 
     pub fn seek(&mut self, loc: SeekFrom) -> std::result::Result<(), std::io::Error> {
+        self.last_push_rax = false;
         self.writer.seek(loc)?;
         Ok(())
     }
 
     pub fn write(&mut self, instr: &Instruction) -> Result<usize, InstructionEncodingError> {
+        self.last_push_rax = false;
         instr.encode(&mut self.writer, self.mode)
     }
 
     pub fn write0(&mut self, mnemonic: Mnemonic) -> Result<usize, InstructionEncodingError> {
+        self.last_push_rax = false;
         Instruction {
             mnemonic: mnemonic,
             .. Default::default()
@@ -39,6 +45,26 @@ impl<T: Write + Seek> InstructionWriter<T> {
     }
 
     pub fn write1(&mut self, mnemonic: Mnemonic, operand1: Operand) -> Result<usize, InstructionEncodingError> {
+        if let Mnemonic::POP = mnemonic {
+            if let Operand::Direct(Reg::RAX) = operand1 {
+                if self.last_push_rax {
+                    self.seek(SeekFrom::Current(-1)).ok();
+                    return Ok(0);
+                }
+            }
+        }
+        if let Mnemonic::PUSH = mnemonic {
+            if let Operand::Direct(Reg::RAX) = operand1 {
+                // push rax
+                self.last_push_rax = true;
+                return Instruction {
+                    mnemonic: mnemonic,
+                    operand1: Some(operand1),
+                    .. Default::default()
+                } .encode(&mut self.writer, self.mode);
+            }
+        }
+        self.last_push_rax = false;
         Instruction {
             mnemonic: mnemonic,
             operand1: Some(operand1),
@@ -47,6 +73,7 @@ impl<T: Write + Seek> InstructionWriter<T> {
     }
 
     pub fn write2(&mut self, mnemonic: Mnemonic, operand1: Operand, operand2: Operand) -> Result<usize, InstructionEncodingError> {
+        self.last_push_rax = false;
         Instruction {
             mnemonic: mnemonic,
             operand1: Some(operand1),
@@ -56,6 +83,7 @@ impl<T: Write + Seek> InstructionWriter<T> {
     }
 
     pub fn write3(&mut self, mnemonic: Mnemonic, operand1: Operand, operand2: Operand, operand3: Operand) -> Result<usize, InstructionEncodingError> {
+        self.last_push_rax = false;
         Instruction {
             mnemonic: mnemonic,
             operand1: Some(operand1),
@@ -66,6 +94,7 @@ impl<T: Write + Seek> InstructionWriter<T> {
     }
 
     pub fn write4(&mut self, mnemonic: Mnemonic, operand1: Operand, operand2: Operand, operand3: Operand, operand4: Operand) -> Result<usize, InstructionEncodingError> {
+        self.last_push_rax = false;
         Instruction {
             mnemonic: mnemonic,
             operand1: Some(operand1),

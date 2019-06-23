@@ -52,6 +52,18 @@ impl<T: Write + Seek> InstructionWriter<T> {
                     return Ok(0);
                 }
             }
+            if let Operand::Direct(Reg::R8) = operand1 {
+                self.write_bytes(b"\x41\x58").ok();
+                return Ok(2);
+            }
+            if let Operand::Direct(Reg::R9) = operand1 {
+                self.write_bytes(b"\x41\x59").ok();
+                return Ok(2);
+            }
+            if let Operand::Direct(Reg::R15) = operand1 {
+                self.write_bytes(b"\x41\x5F").ok();
+                return Ok(2);
+            }
         }
         if let Mnemonic::PUSH = mnemonic {
             if let Operand::Direct(Reg::RAX) = operand1 {
@@ -62,6 +74,10 @@ impl<T: Write + Seek> InstructionWriter<T> {
                     operand1: Some(operand1),
                     .. Default::default()
                 } .encode(&mut self.writer, self.mode);
+            }
+            if let Operand::Direct(Reg::R15) = operand1 {
+                self.write_bytes(b"\x41\x57").ok();
+                return Ok(2);
             }
         }
         self.last_push_rax = false;
